@@ -86,12 +86,20 @@ body {
   border-radius: var(--radius);
 }
 
-/* 封面位置：阶段 1 先用一个色块占位 */
+/* 封面位置：有图片就铺满，没有就留一个色块占位 */
 .card-cover {
   flex: 0 0 64px;
   height: 90px;
   border-radius: 8px;
   background-color: #d9dde3;
+  overflow: hidden; /* 图片铺满时不要溢出圆角 */
+}
+
+.card-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 按比例裁切填满，不拉伸变形 */
 }
 
 .card-body {
@@ -132,6 +140,11 @@ body {
   font-size: 12px;
   color: var(--text-muted);
   text-align: center;
+  min-height: 18px; /* 文字从有到无时，页面不要跟着跳一下 */
+}
+
+.hint.is-error {
+  color: var(--accent);
 }
 
 /* 屏幕宽一点的时候封面放大一些 */
