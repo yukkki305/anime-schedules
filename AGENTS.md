@@ -8,8 +8,9 @@
 - 纯前端：HTML + CSS + 原生 JavaScript
 - 不使用任何框架（不用 React/Vue）
 - 不使用构建工具
-- 数据源：Jikan API v4（https://api.jikan.moe/v4）
-- 时间统一显示为北京时间
+- 数据源：AniList GraphQL API（https://graphql.anilist.co）
+  （原 Jikan API v4 在 2026-10-26 实测本机不可达，已确认改用 AniList）
+- 时间统一显示为北京时间（接口给的是 UNIX 时间戳，换算显示，不猜时区）
 
 ## 依赖策略
 - 默认只用浏览器原生能力（fetch、localStorage）
