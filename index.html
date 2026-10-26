@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日新番更新时间表</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>每日新番更新时间表</h1>
+    <p class="subtitle">时间均为北京时间（UTC+8）</p>
+  </header>
+
+  <!-- 7 个星期按钮。阶段 1 只是摆着，点了没反应，切换留给阶段 3。 -->
+  <nav class="weekday-nav" id="weekdayNav" aria-label="选择星期">
+    <button type="button" class="weekday-btn" data-weekday="1">周一</button>
+    <button type="button" class="weekday-btn is-active" data-weekday="2">周二</button>
+    <button type="button" class="weekday-btn" data-weekday="3">周三</button>
+    <button type="button" class="weekday-btn" data-weekday="4">周四</button>
+    <button type="button" class="weekday-btn" data-weekday="5">周五</button>
+    <button type="button" class="weekday-btn" data-weekday="6">周六</button>
+    <button type="button" class="weekday-btn" data-weekday="0">周日</button>
+  </nav>
+
+  <!-- 卡片由 js/main.js 用假数据渲染进来 -->
+  <main class="schedule" id="schedule"></main>
+
+  <p class="hint">阶段 1：下面是 3 条假数据，还没有接真实接口。</p>
+
+  <!-- 按加载顺序排：先工具，后界面，最后入口。全部普通脚本，不用 ES 模块。 -->
+  <script src="js/time.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/cache.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/main.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+/* style.css —— 全站样式。阶段 1 只做静态骨架，深色模式、动画都不在这里。 */
+
+:root {
+  --bg: #f5f6f8;
+  --card-bg: #ffffff;
+  --text: #1f2430;
+  --text-muted: #6b7280;
+  --border: #e3e6ea;
+  --accent: #e4572e;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  line-height: 1.5;
+}
+
+/* 顶部标题 */
+.site-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.site-header h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 7 个星期按钮：一行排开，窄屏可以左右滑 */
+.weekday-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  max-width: 640px;
+  margin: 0 auto 16px;
+  padding-bottom: 8px;
+}
+
+.weekday-btn {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.weekday-btn.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* 卡片列表 */
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* 封面位置：阶段 1 先用一个色块占位 */
+.card-cover {
+  flex: 0 0 64px;
+  height: 90px;
+  border-radius: 8px;
+  background-color: #d9dde3;
+}
+
+.card-body {
+  flex: 1 1 auto;
+  min-width: 0; /* 不加这行，长标题会把卡片撑破 */
+}
+
+.card-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.card-time {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.card-score {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.hint {
+  max-width: 640px;
+  margin: 16px auto 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* 屏幕宽一点的时候封面放大一些 */
+@media (min-width: 560px) {
+  .card-cover {
+    flex-basis: 80px;
+    height: 112px;
+  }
+}
