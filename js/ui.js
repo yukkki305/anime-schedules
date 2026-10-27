@@ -17,15 +17,79 @@
   // 没有封面图时用的占位色，按顺序轮流取，卡片不会一片死灰
   var PLACEHOLDER_COLORS = ['#c7d2fe', '#fbcfe8', '#bbf7d0', '#fde68a', '#bae6fd', '#ddd6fe', '#fecaca', '#a7f3d0'];
 
+  // —————————— 封面懒加载（阶段 4b） ——————————
+  // 一屏显示不了那么多卡片，但浏览器默认会把所有封面都下载下来。
+  // 这里改成：卡片进入「离屏幕 200 像素以内」时，才真正去下载它的封面。
+  // 好处：打开更快、更省流量；代价：往下滚的时候封面才慢慢出来（前面先显示色块）。
+  var LAZY_MARGIN = '200px 0px';   // 提前 200 像素就开始下载，滚动时不会看到空框
+  var observer = null;             // 全页只用一个「观察员」，省内存
+
+  // 真正开始下载一张封面。下载过程中的兜底和以前一样：超时/失败就撤掉图片，露出下面的色块。
+  function startLoadingCover(img) {
+    var url = img.getAttribute('data-src');
+    if (!url || img.getAttribute('src')) {
+      return;   // 没有地址，或者已经开始下载了
+    }
+    img.src = url;
+
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (!settled) {
+        img.remove();
+      }
+    }, IMAGE_TIMEOUT_MS);
+
+    img.addEventListener('load', function () {
+      settled = true;
+      clearTimeout(timer);
+    });
+    img.addEventListener('error', function () {
+      settled = true;
+      clearTimeout(timer);
+      img.remove();   // 链接失效时别留一个破图标
+    });
+  }
+
+  // 把一张封面交给观察员：等它快滚到屏幕里了再下载。
+  // 老浏览器没有这个功能，就退化成「立刻下载」，保证图还是能出来。
+  function watchCover(img) {
+    if (typeof window.IntersectionObserver !== 'function') {
+      startLoadingCover(img);
+      return;
+    }
+    if (!observer) {
+      observer = new window.IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            observer.unobserve(entries[i].target);   // 下载过就不用再盯着它
+            startLoadingCover(entries[i].target);
+          }
+        }
+      }, { rootMargin: LAZY_MARGIN });
+    }
+    observer.observe(img);
+  }
+
+  // 清空列表。顺手把观察员停掉：不然被删掉的卡片还挂在观察员身上，
+  // 点一次日子就多留一批没用的记录。
+  function clearList(container) {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    container.textContent = '';
+  }
+
   // 造一张卡片。注意：文字一律用 textContent 塞进去，
   // 不用 innerHTML —— 这样标题里就算带 < > 符号也不会被当成代码执行。
   function createCard(item, index) {
     var card = document.createElement('article');
     card.className = 'card';
 
-    // 封面：有图片地址就显示图片，没有就退回到纯色块
+    // 封面：先铺一层彩色块（图片没下来之前也不会是空白），有图片地址再叠一张图
     var cover = document.createElement('div');
     cover.className = 'card-cover';
+    cover.style.backgroundColor = item.coverColor || PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length];
 
     if (item.coverUrl) {
       var img = document.createElement('img');
@@ -33,30 +97,12 @@
       // 前面拼上中转站前缀；原地址里的 https:// 要去掉，中转站不认它。
       // 后面的 ?w=160 是让中转站把图缩到 160 像素宽：卡片最宽才 80 像素，
       // 160 在高清屏上也够清楚，而文件小了一半左右，下得更快。
-      img.src = COVER_PROXY + item.coverUrl.replace(/^https?:\/\//, '') + '?w=160';
+      // 注意：地址先存在 data-src 里，不写 src —— 写了浏览器就会立刻下载。
+      img.setAttribute('data-src', COVER_PROXY + item.coverUrl.replace(/^https?:\/\//, '') + '?w=160');
       img.alt = ''; // 封面只是装饰，标题就在旁边，读屏软件不用重复念
 
-      var settled = false;
-      var timer = setTimeout(function () {
-        if (!settled) {
-          img.remove();
-        }
-      }, IMAGE_TIMEOUT_MS);
-
-      img.addEventListener('load', function () {
-        settled = true;
-        clearTimeout(timer);
-      });
-      img.addEventListener('error', function () {
-        // 图片加载失败（链接失效）时，别留一个破图标，删掉退回色块
-        settled = true;
-        clearTimeout(timer);
-        img.remove();
-      });
+      watchCover(img);   // 等快滚到屏幕里了，再由 startLoadingCover 真正下载
       cover.appendChild(img);
-    } else {
-      // 没有封面地址（或后面把封面关掉了）就退回彩色占位块
-      cover.style.backgroundColor = item.coverColor || PLACEHOLDER_COLORS[index % PLACEHOLDER_COLORS.length];
     }
     card.appendChild(cover);
 
@@ -113,7 +159,7 @@
     if (!container) {
       return;
     }
-    container.textContent = '';
+    clearList(container);
 
     for (var i = 0; i < list.length; i++) {
       container.appendChild(createCard(list[i], i));
@@ -145,7 +191,7 @@
     if (!container) {
       return;
     }
-    container.textContent = '';
+    clearList(container);
 
     var total = count || SKELETON_COUNT;
     for (var i = 0; i < total; i++) {
@@ -183,7 +229,7 @@
     if (!container) {
       return;
     }
-    container.textContent = '';
+    clearList(container);
 
     var block = document.createElement('div');
     block.className = 'state-block is-error';
@@ -222,7 +268,7 @@
     if (!container) {
       return;
     }
-    container.textContent = '';
+    clearList(container);
 
     var block = document.createElement('div');
     block.className = 'state-block';

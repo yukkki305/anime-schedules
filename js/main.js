@@ -144,6 +144,19 @@
     });
   }
 
+  // 按播出时间从早到晚排。接口本来就大致有序，这里再排一次，
+  // 保证缓存/补中文名之后顺序也不会乱。
+  // 时间未知的排到最后，而不是排到最前面（否则会以为它凌晨就播了）。
+  function sortByTime(list) {
+    var copy = list.slice();   // 复制一份再排，别把传进来的数组改了
+    copy.sort(function (a, b) {
+      var ta = typeof a.airingAt === 'number' ? a.airingAt : Infinity;
+      var tb = typeof b.airingAt === 'number' ? b.airingAt : Infinity;
+      return ta - tb;
+    });
+    return copy;
+  }
+
   // 真正画到页面上；封面关掉时把图片地址清空，让 ui.js 用彩色块顶上
   function renderList(list) {
     if (!SHOW_COVER) {
@@ -151,7 +164,7 @@
         list[i].coverUrl = '';
       }
     }
-    window.UI.renderCards(list);
+    window.UI.renderCards(sortByTime(list));
   }
 
   // '2026-10-27' -> '10-27 周二'

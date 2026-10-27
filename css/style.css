@@ -274,3 +274,41 @@ body {
     animation: none;
   }
 }
+
+/* —————————— 阶段 4b：窄屏收尾 —————————— */
+/* 窗口窄的时候 7 个星期按钮加起来会超出屏幕，多出一条横向滚动条（实测 375px 溢出、
+   492px 也差 9px）。这里把按钮的间距、内边距、字号都缩小一点，让 7 个刚好排得下。
+   断点取 520px：再宽一点就用回原来的大小。 */
+@media (max-width: 520px) {
+  body {
+    padding: 12px;
+  }
+
+  .weekday-nav {
+    gap: 4px;
+    padding-bottom: 6px;
+  }
+
+  .weekday-btn {
+    padding: 6px 9px;
+    font-size: 13px;
+  }
+
+  .card {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .card-cover {
+    flex-basis: 56px;
+    height: 80px;
+  }
+
+  .card-title {
+    font-size: 14px;
+  }
+
+  .state-block {
+    padding: 24px 14px;
+  }
+}
