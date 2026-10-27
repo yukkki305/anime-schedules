@@ -22,7 +22,7 @@
     '      media {',
     '        id',
     '        title { romaji native }',
-    '        coverImage { medium }',
+    '        coverImage { large }',
     '        averageScore',
     '        format',
     '        episodes',
@@ -110,7 +110,7 @@
       timeText: window.Time.cardTime(item.airingAt),
       episodeText: item.episode ? '第 ' + item.episode + ' 集' : '集数待定',
       scoreText: media.averageScore ? '评分 ' + media.averageScore : '暂无评分',
-      coverUrl: (media.coverImage && media.coverImage.medium) || '',
+      coverUrl: (media.coverImage && (media.coverImage.large || media.coverImage.medium)) || '',
       format: media.format || '',
       origin: media.countryOfOrigin || '',
       siteUrl: media.siteUrl || ''

@@ -4,10 +4,15 @@
 (function () {
   'use strict';
 
-  // 封面图片最多等这么久，还下不来就撤掉，退回灰色占位块。
-  // 实测这台机器访问 AniList 的图片服务器很慢（一张图要 10–50 秒），
-  // 没有这个兜底的话，卡片会一直挂着一个空框。
+  // 封面图片最多等这么久，还下不来就撤掉，退回彩色占位块。
+  // 现在封面走中转站，通常一秒就下来；这个兜底是防中转站哪天挂掉或变慢，
+  // 那样卡片会一直挂着一个空框，很难看。
   var IMAGE_TIMEOUT_MS = 12000;
+
+  // 封面图走这个「加速中转站」。原因：实测这台机器直连 AniList 的图片服务器
+  //（s4.anilist.co）一张图要 10–50 秒，而经 i0.wp.com 转发后 10 张一起下只要 1 秒多。
+  // 用法很简单：把原地址的 https:// 去掉，接在这个前缀后面。
+  var COVER_PROXY = 'https://i0.wp.com/';
 
   // 没有封面图时用的占位色，按顺序轮流取，卡片不会一片死灰
   var PLACEHOLDER_COLORS = ['#c7d2fe', '#fbcfe8', '#bbf7d0', '#fde68a', '#bae6fd', '#ddd6fe', '#fecaca', '#a7f3d0'];
@@ -25,7 +30,10 @@
     if (item.coverUrl) {
       var img = document.createElement('img');
       img.className = 'card-cover-img';
-      img.src = item.coverUrl;
+      // 前面拼上中转站前缀；原地址里的 https:// 要去掉，中转站不认它。
+      // 后面的 ?w=160 是让中转站把图缩到 160 像素宽：卡片最宽才 80 像素，
+      // 160 在高清屏上也够清楚，而文件小了一半左右，下得更快。
+      img.src = COVER_PROXY + item.coverUrl.replace(/^https?:\/\//, '') + '?w=160';
       img.alt = ''; // 封面只是装饰，标题就在旁边，读屏软件不用重复念
 
       var settled = false;

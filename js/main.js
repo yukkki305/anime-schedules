@@ -4,10 +4,10 @@
 (function () {
   'use strict';
 
-  // 封面图开关。实测这台机器从 AniList 的图片服务器下一张封面要 10–50 秒，
-  // 10 张一起下，页面会有一分钟挂着灰框，很难看，所以先关掉，用彩色块代替。
-  // 如果你的网络（比如挂了代理）访问 AniList 图片很快，把下面改成 true 即可。
-  var SHOW_COVER = false;
+  // 封面图开关。直连 AniList 图片服务器太慢（一张 10–50 秒），
+  // 所以封面统一走 js/ui.js 里的中转站（i0.wp.com），实测 10 张一起 1 秒多。
+  // 想回到「只有彩色块、完全不加载图片」的样子，把这里改成 false 即可。
+  var SHOW_COVER = true;
 
   var dayKey = window.Time.todayKey();
 
