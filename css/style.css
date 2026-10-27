@@ -114,6 +114,19 @@ body {
   word-break: break-word;
 }
 
+/* 有中文名时，标题拆成两行：中文（正常）+ 罗马音（小一号灰字） */
+.card-title-zh {
+  display: block;
+}
+
+.card-title-romaji {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .card-meta {
   display: flex;
   flex-wrap: wrap;

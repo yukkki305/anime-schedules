@@ -29,6 +29,7 @@
     '        countryOfOrigin',
     '        isAdult',
     '        siteUrl',
+    '        startDate { year month day }',   // 首播日期：给 js/zh.js 配中文名用
     '      }',
     '    }',
     '  }',
@@ -113,7 +114,9 @@
       coverUrl: (media.coverImage && (media.coverImage.large || media.coverImage.medium)) || '',
       format: media.format || '',
       origin: media.countryOfOrigin || '',
-      siteUrl: media.siteUrl || ''
+      siteUrl: media.siteUrl || '',
+      // 首播日期只用来和 yuc.wiki 的首播日对号，不显示、也不存进缓存
+      startDate: media.startDate || null
     };
   }
 

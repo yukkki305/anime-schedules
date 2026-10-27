@@ -65,7 +65,22 @@
 
     var title = document.createElement('h2');
     title.className = 'card-title';
-    title.textContent = item.title;
+    if (item.titleZh) {
+      // 有中文名：上面一行中文，下面一行罗马音（小一号灰字）
+      var zh = document.createElement('span');
+      zh.className = 'card-title-zh';
+      zh.textContent = item.titleZh;
+
+      var romaji = document.createElement('span');
+      romaji.className = 'card-title-romaji';
+      romaji.textContent = item.title;
+
+      title.appendChild(zh);
+      title.appendChild(romaji);
+    } else {
+      // 没有中文名：只显示罗马音
+      title.textContent = item.title;
+    }
     body.appendChild(title);
 
     var meta = document.createElement('p');

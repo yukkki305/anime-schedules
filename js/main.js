@@ -64,18 +64,27 @@
     var cached = window.CacheStore.get(dayKey);
 
     if (cached) {
-      // 缓存命中：不请求，直接画
-      if (cached.length) {
-        renderList(cached);
-        window.UI.setStatus(
-          '共 ' + cached.length + ' 部 · ' + describe(dayKey) + ' · ' + cacheLabel(),
-          false
-        );
-      } else {
-        // 「这天确实没排播」也会被缓存下来，再点一次还是显示空状态，而不是空白
-        window.UI.renderEmpty(describe(dayKey) + ' 这一天 AniList 上没有查到播出安排。');
-        window.UI.setStatus('');
-      }
+      // 缓存命中：不请求，直接画。
+      // 但仍然过一遍中文名（表在本地缓存里，不用再联网），
+      // 这样就算缓存是「还没有中文名」的版本，也能补上中文。
+      var cachedSeq = ++requestSeq;
+      loadingDayKey = '';
+      window.Zh.attach(cached, dayKey).then(function (list) {
+        if (cachedSeq !== requestSeq) {
+          return;   // 这期间用户又点了别的日子，这份结果就作废
+        }
+        if (list.length) {
+          renderList(list);
+          window.UI.setStatus(
+            '共 ' + list.length + ' 部 · ' + describe(dayKey) + ' · ' + cacheLabel(),
+            false
+          );
+        } else {
+          // 「这天确实没排播」也会被缓存下来，再点一次还是显示空状态，而不是空白
+          window.UI.renderEmpty(describe(dayKey) + ' 这一天 AniList 上没有查到播出安排。');
+          window.UI.setStatus('');
+        }
+      });
       return;
     }
 
@@ -88,6 +97,10 @@
     window.UI.renderSkeleton();   // 先画骨架，免得白屏让人以为坏了
     window.UI.setStatus('正在查询 ' + describe(dayKey) + '…（AniList 一般要 5–8 秒）');
 
+    // 中文名表（来自 yuc.wiki，约 1 秒）和 AniList 同时开始抓，谁也不等谁。
+    // 这里不接它的结果，只是让它早点开始；真正取用是在下面 attach 的时候。
+    window.Zh.getTable(dayKey);
+
     window.Api.fetchDay(dayKey, function (attempt, waitMs, err) {
       if (mySeq !== requestSeq) {
         return;
@@ -99,6 +112,12 @@
       );
     }).then(function (list) {
       if (mySeq !== requestSeq) {
+        return null;
+      }
+      // 给每部番补中文名。抓不到/yuc 改版时它是原样返回，不会让整个加载失败。
+      return window.Zh.attach(list, dayKey);
+    }).then(function (list) {
+      if (!list || mySeq !== requestSeq) {
         return;
       }
       loadingDayKey = '';

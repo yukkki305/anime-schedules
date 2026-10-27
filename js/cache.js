@@ -9,16 +9,18 @@
 (function () {
   'use strict';
 
-  var PREFIX = 'anime:v2:day:';   // 带版本号：以后数据格式变了，把 v2 改成 v3，旧缓存自然失效
-  // v1 → v2 的原因：v1 的缓存里混着国漫，改成本过滤日本动画后，
-  // 旧缓存必须作废，否则 30 分钟内你还能看到国漫。
-  var SCHEMA = 2;                 // 和 PREFIX 里的版本号保持一致
+  var PREFIX = 'anime:v4:day:';   // 带版本号：以后数据格式变了，把 v4 改成 v5，旧缓存自然失效
+  // v1 → v2：v1 的缓存里混着国漫，过滤日本动画后旧缓存必须作废。
+  // v2 → v3：卡片多了中文名（titleZh）。
+  // v3 → v4：缓存里加存「首播日期」，因为从缓存里再配中文名时要用它区分
+  //          （同一时间有好几部番，只靠时间会配错）。
+  var SCHEMA = 4;                 // 和 PREFIX 里的版本号保持一致
   var TTL_MS = 30 * 60 * 1000;    // 缓存有效期：30 分钟
 
   // 只存卡片要用的字段，别把接口返回的一大坨全塞进去
   var FIELDS = [
-    'id', 'title', 'airingAt', 'timeText', 'episodeText',
-    'scoreText', 'coverUrl', 'format', 'origin', 'siteUrl'
+    'id', 'title', 'titleZh', 'airingAt', 'timeText', 'episodeText',
+    'scoreText', 'coverUrl', 'format', 'origin', 'siteUrl', 'startDate'
   ];
 
   var memory = {};   // 退路：{ '2026-10-27': { savedAt: 毫秒, list: [...] } }
@@ -39,15 +41,22 @@
     }
   }
 
-  // 旧版本（v1）的缓存键还占着浏览器空间，而且是「含国漫」的旧数据，一次性删掉
+  // 旧版本（v1 含国漫、v2 没中文名、v3 没首播日期）的缓存键还占着空间，一次性删掉。
+  // 注意只删「本项目的旧版本」，不碰 js/zh.js 存的中文名表（那是 anime:v3:zh:）。
   function dropLegacy() {
-    var oldPrefix = 'anime:v1:';
+    var oldPrefixes = ['anime:v1:day:', 'anime:v2:day:', 'anime:v3:day:'];
     try {
       var keys = [];
       for (var i = 0; i < window.localStorage.length; i++) {
         var k = window.localStorage.key(i);
-        if (k && k.indexOf(oldPrefix) === 0) {
-          keys.push(k);
+        if (!k) {
+          continue;
+        }
+        for (var p = 0; p < oldPrefixes.length; p++) {
+          if (k.indexOf(oldPrefixes[p]) === 0) {
+            keys.push(k);
+            break;
+          }
         }
       }
       for (var j = 0; j < keys.length; j++) {
