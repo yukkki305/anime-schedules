@@ -122,8 +122,12 @@
     var range = window.Time.dayRange(dayKey);
 
     return postWithRetry({ a: range.start, b: range.end }, onRetry).then(function (page) {
+      // 只要日本动画：
+      //   countryOfOrigin === 'JP' 才是日本片，国漫（CN）之类一律不要；
+      //   国家字段是空的（极少数）也不要，宁可少显示，也不要混进来源不明的。
+      // 实测 2026-10-26~11-01 这一周：124 条里 108 条是 JP、16 条是 CN、0 条空值。
       var list = page.airingSchedules.filter(function (item) {
-        return item.media && !item.media.isAdult;
+        return item.media && !item.media.isAdult && item.media.countryOfOrigin === 'JP';
       });
       return list.map(toCard);
     });

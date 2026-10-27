@@ -9,7 +9,10 @@
 (function () {
   'use strict';
 
-  var PREFIX = 'anime:v1:day:';   // 带版本号：以后数据格式变了，把 v1 改成 v2，旧缓存自然失效
+  var PREFIX = 'anime:v2:day:';   // 带版本号：以后数据格式变了，把 v2 改成 v3，旧缓存自然失效
+  // v1 → v2 的原因：v1 的缓存里混着国漫，改成本过滤日本动画后，
+  // 旧缓存必须作废，否则 30 分钟内你还能看到国漫。
+  var SCHEMA = 2;                 // 和 PREFIX 里的版本号保持一致
   var TTL_MS = 30 * 60 * 1000;    // 缓存有效期：30 分钟
 
   // 只存卡片要用的字段，别把接口返回的一大坨全塞进去
@@ -21,6 +24,10 @@
   var memory = {};   // 退路：{ '2026-10-27': { savedAt: 毫秒, list: [...] } }
   var useLocalStorage = detectLocalStorage();
 
+  if (useLocalStorage) {
+    dropLegacy();   // 顺手清掉 v1 时代留下的旧缓存（那些里面混着国漫）
+  }
+
   function detectLocalStorage() {
     try {
       var probe = PREFIX + 'probe';
@@ -29,6 +36,25 @@
       return true;
     } catch (e) {
       return false;   // 这个浏览器不给用 localStorage 时走这里（改用内存）
+    }
+  }
+
+  // 旧版本（v1）的缓存键还占着浏览器空间，而且是「含国漫」的旧数据，一次性删掉
+  function dropLegacy() {
+    var oldPrefix = 'anime:v1:';
+    try {
+      var keys = [];
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (k && k.indexOf(oldPrefix) === 0) {
+          keys.push(k);
+        }
+      }
+      for (var j = 0; j < keys.length; j++) {
+        window.localStorage.removeItem(keys[j]);
+      }
+    } catch (e) {
+      // 删不掉也不影响使用，下次再试
     }
   }
 
@@ -51,7 +77,7 @@
 
   // 检查一份缓存还能不能用
   function usable(saved) {
-    return !!saved && saved.v === 1 && Array.isArray(saved.list) && (Date.now() - saved.savedAt <= TTL_MS);
+    return !!saved && saved.v === SCHEMA && Array.isArray(saved.list) && (Date.now() - saved.savedAt <= TTL_MS);
   }
 
   function readDisk(dayKey) {
@@ -72,7 +98,7 @@
   }
 
   function writeDisk(dayKey, list) {
-    var payload = JSON.stringify({ v: 1, savedAt: Date.now(), list: slim(list) });
+    var payload = JSON.stringify({ v: SCHEMA, savedAt: Date.now(), list: slim(list) });
     try {
       window.localStorage.setItem(keyFor(dayKey), payload);
       return true;
@@ -98,7 +124,7 @@
   }
 
   function writeMemory(dayKey, list) {
-    memory[dayKey] = { v: 1, savedAt: Date.now(), list: slim(list) };
+    memory[dayKey] = { v: SCHEMA, savedAt: Date.now(), list: slim(list) };
   }
 
   // 拿某一天的缓存；没有、过期、读坏了都返回 null
