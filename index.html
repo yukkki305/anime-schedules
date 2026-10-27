@@ -31,6 +31,8 @@
   <p class="hint" id="status" aria-live="polite"></p>
 
   <!-- 按加载顺序排：先工具，后界面，最后入口。全部普通脚本，不用 ES 模块。 -->
+  <!-- data/titles-zh.js 是中文名对照表（甲方案），必须排在 zh.js 前面 -->
+  <script src="data/titles-zh.js" defer></script>
   <script src="js/time.js" defer></script>
   <script src="js/api.js" defer></script>
   <script src="js/cache.js" defer></script>

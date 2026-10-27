@@ -97,9 +97,8 @@
     window.UI.renderSkeleton();   // 先画骨架，免得白屏让人以为坏了
     window.UI.setStatus('正在查询 ' + describe(dayKey) + '…（AniList 一般要 5–8 秒）');
 
-    // 中文名表（来自 yuc.wiki，约 1 秒）和 AniList 同时开始抓，谁也不等谁。
-    // 这里不接它的结果，只是让它早点开始；真正取用是在下面 attach 的时候。
-    window.Zh.getTable(dayKey);
+    // 中文名现在主要靠本地对照表（data/titles-zh.js），查表是瞬时的，不用提前抓。
+    // 只有表里没有的番才去 yuc.wiki 猜，那一步在 Zh.attach 里面按需触发。
 
     window.Api.fetchDay(dayKey, function (attempt, waitMs, err) {
       if (mySeq !== requestSeq) {

@@ -1,15 +1,14 @@
 // zh.js —— 给日本动画找中文名。
 //
-// 名字从哪来：yuc.wiki（长门番堂，中文圈常用的每季新番表，简体译名）。
-// 为什么是它：2026-10-27 实测，只有这个站对网页请求放行（CORS 允许），
-// 一季的页面 164KB、1 秒就能下来，里面每部番都写着「星期几 + 日本时间 + 首播日期 + 中文名」。
+// 现在按「甲方案」工作：**先查本地对照表** `data/titles-zh.js`。
+// 表里键是 AniList 的番剧 id，值是中文名 —— id 是唯一的，所以只要查到就一定对，
+// 绝不会出现「把 A 的中文名贴到 B 上」这种事。
 //
-// 怎么对上号：AniList 的时间是「流媒体」口径，yuc 是「电视台」口径，
-// 实测两者差 15~60 分钟不等（同一部番差 30 分钟最常见），所以不能直接比时间。
-// 做法分两步：
-//   1. 先估一个「当天的整体时间差」：哪个偏移量能让最多的番对上，就用哪个；
-//   2. 再在这个偏移量下逐部配对，同时要求首播日期也对得上。
-// 判断不了（同一时间好几部、首播日差太多）就宁可不显示中文，绝不乱配。
+// 表里没有的番（新番、冷门番、yuc 没收录的），才走「兜底」：
+// 去 yuc.wiki（长门番堂，中文圈常用的每季新番表，简体译名）抓当季页面，
+// 靠「星期 + 日本时间 + 首播日期」猜配对。
+// 但这里是猜的，所以规则很保守：分不清（同一时间好几部、首播日对不上）就
+// 宁可不显示中文，绝不乱配。
 //
 // 兜底原则：抓不到、太慢、对方改版解析不出来 —— 全部当作「没有中文名」，
 // 页面照旧显示罗马音，其他功能一点不受影响。
@@ -18,6 +17,13 @@
   'use strict';
 
   var ORIGIN = 'https://yuc.wiki/';
+
+  // 兜底开关：表里查不到的番，要不要再去 yuc.wiki 猜一个中文名。
+  // 2026-10-27 实测决定**默认关掉**：猜出来的名字出现过两次错配
+  //（把「七叶树王国的七名骑士」安到了 Sirotan 头上、把「新 Keroro军曹」安到了
+  // Nezumi-kun 头上），这正是当初换成对照表要解决的问题。
+  // 想要兜底就把这里改成 true —— 但请记住：猜错了不会有任何提示。
+  var USE_YUC_FALLBACK = false;
 
   // 抓这一页最多等 5 秒。它实测 1 秒就回来，等更久只会拖慢整页。
   var TIMEOUT_MS = 5000;
@@ -316,118 +322,159 @@
     return pairs;
   }
 
-  // 给一组卡片补上中文名（titleZh）。找不到就保持原样。
+  // 从本地对照表里查中文名。查不到返回空字符串。
+  // 表在 data/titles-zh.js 里，键是字符串形式的 id（对象键本来就是字符串）。
+  function fromTable(item) {
+    var table = window.ZH_TITLES;
+    if (!table || item.id === null || item.id === undefined) {
+      return '';
+    }
+    var name = table[String(item.id)];
+    return typeof name === 'string' ? name : '';
+  }
+
+  // 给一组卡片补上中文名（titleZh）。
+  // 顺序很关键：**先查表**（准），表里没有再走 yuc 兜底（猜）。
   function attach(list, dayKey) {
+    var rest = [];        // 表里没有的，才需要去猜
+    var usedNames = {};   // 表里已经用掉的中文名，兜底时不许再用（否则同一页会出现两个同名）
+
+    for (var i = 0; i < list.length; i++) {
+      list[i].titleZh = '';   // 清掉缓存里可能带着的旧结果，避免叠在一起
+      var known = fromTable(list[i]);
+      if (known) {
+        list[i].titleZh = known;
+        usedNames[known] = true;
+      } else {
+        rest.push(list[i]);
+      }
+    }
+
+    if (!rest.length || !USE_YUC_FALLBACK) {
+      // 全都查到了（或者兜底被关掉）：连 yuc.wiki 都不用抓，打开更快
+      return Promise.resolve(list);
+    }
+
     return getTable(dayKey).then(function (table) {
-      if (!table.length || !list.length) {
-        return list;
+      if (!table.length) {
+        return list;   // 兜底表没抓到，就保持「只有罗马音」
       }
-
-      // 每次都从头配一遍：缓存里可能存着上一次配的结果，先清掉，
-      // 否则旧的（可能配错的）中文名会留下来，和新的叠在一起。
-      for (var n = 0; n < list.length; n++) {
-        list[n].titleZh = '';
-      }
-
-      var pairs = buildPairs(list, table);
-      var dropped = {};     // 分不清的卡片：宁可不给中文名
-      var poisoned = {};    // 被分不清的卡片沾过的中文名：也不再分给别人
-      var itemTaken = {};
-      var entryTaken = {};
-
-      // 第零步：先按「首播日期一模一样」配一轮。
-      // 日期比时刻靠得住（实测 yuc 的档期时间和 AniList 的实际时间最多差一小时，
-      // 但首播日期一般是一样的），所以先拿它把能确定的都定下来。
-      var byDate = {};      // '月-日' -> [中文名序号]
-      for (var b = 0; b < table.length; b++) {
-        var key = table[b].startMonth + '-' + table[b].startDay;
-        if (!byDate[key]) {
-          byDate[key] = [];
-        }
-        byDate[key].push(b);
-      }
-
-      var claims = {};      // 中文名序号 -> [卡片序号]，用来看有没有两张卡片抢同一个
-      var dateMatch = {};   // 卡片序号 -> 中文名序号（只在只有一个候选时才记）
-      for (var ii = 0; ii < list.length; ii++) {
-        var sd = list[ii].startDate;
-        if (!sd || !sd.month || !sd.day) {
-          continue;
-        }
-        var cands = byDate[sd.month + '-' + sd.day] || [];
-        var only = -1;
-        var howMany = 0;
-        for (var cc = 0; cc < cands.length; cc++) {
-          var ej = cands[cc];
-          var tdiff = Math.abs(table[ej].weekday * 1440 + table[ej].minutes + OFFSET_MINUTES
-            - weekMinutesOfTimestamp(list[ii].airingAt));
-          if (tdiff <= SAME_DATE_WINDOW_MINUTES) {
-            only = ej;
-            howMany += 1;
-          }
-        }
-        if (howMany === 1) {
-          dateMatch[ii] = only;
-          if (!claims[only]) {
-            claims[only] = [];
-          }
-          claims[only].push(ii);
-        }
-      }
-
-      for (var iw in dateMatch) {
-        var ew = dateMatch[iw];
-        if (claims[ew] && claims[ew].length === 1) {
-          list[iw].titleZh = table[ew].title;
-          itemTaken[iw] = true;
-          entryTaken[ew] = true;
-        }
-      }
-
-      // 第一步：找出「两张卡片抢同一个中文名」或「一张卡片有两个差不多的候选」
-      for (var k = 0; k < pairs.length; k++) {
-        var pair = pairs[k];
-        if (dropped[pair.item] || itemTaken[pair.item] || entryTaken[pair.entry]) {
-          continue;
-        }
-
-        for (var m = 0; m < pairs.length; m++) {
-          var other = pairs[m];
-          if (other === pair || dropped[other.item] || Math.abs(other.score - pair.score) > AMBIGUITY_MARGIN) {
-            continue;
-          }
-          if (itemTaken[other.item] || entryTaken[other.entry]) {
-            continue;
-          }
-          if (other.item === pair.item || other.entry === pair.entry) {
-            dropped[pair.item] = true;
-            dropped[other.item] = true;
-            break;
-          }
-        }
-      }
-
-      // 第二步：被砍掉的卡片沾过的中文名也标脏，免得换个卡片再配错一次
-      for (var a = 0; a < pairs.length; a++) {
-        if (dropped[pairs[a].item]) {
-          poisoned[pairs[a].entry] = true;
-        }
-      }
-
-      // 第三步：从最像的一对开始认领，一个中文名只给一张卡片
-      for (var p = 0; p < pairs.length; p++) {
-        var cand = pairs[p];
-        if (dropped[cand.item] || poisoned[cand.entry] || itemTaken[cand.item] || entryTaken[cand.entry]) {
-          continue;
-        }
-        itemTaken[cand.item] = true;
-        entryTaken[cand.entry] = true;
-        list[cand.item].titleZh = table[cand.entry].title;
-      }
+      matchTitles(rest, table, usedNames);
       return list;
     }).catch(function () {
       return list;   // 任何意外都不影响主要功能
     });
+  }
+
+  // 用 yuc 的中文名表去猜（只处理传进来的这些卡片，已经查到的不动它）
+  function matchTitles(list, table, usedNames) {
+    if (!list.length) {
+      return;
+    }
+
+    var pairs = buildPairs(list, table);
+
+    // 表里已经用掉的中文名，从候选里剔除：宁可没有，也不能两张卡片同名（那就是配错了）
+    for (var q = pairs.length - 1; q >= 0; q--) {
+      if (usedNames && usedNames[table[pairs[q].entry].title]) {
+        pairs.splice(q, 1);
+      }
+    }
+
+    var dropped = {};     // 分不清的卡片：宁可不给中文名
+    var poisoned = {};    // 被分不清的卡片沾过的中文名：也不再分给别人
+    var itemTaken = {};
+    var entryTaken = {};
+
+    // 第零步：先按「首播日期一模一样」配一轮。
+    // 日期比时刻靠得住（实测 yuc 的档期时间和 AniList 的实际时间最多差一小时，
+    // 但首播日期一般是一样的），所以先拿它把能确定的都定下来。
+    var byDate = {};      // '月-日' -> [中文名序号]
+    for (var b = 0; b < table.length; b++) {
+      var key = table[b].startMonth + '-' + table[b].startDay;
+      if (!byDate[key]) {
+        byDate[key] = [];
+      }
+      byDate[key].push(b);
+    }
+
+    var claims = {};      // 中文名序号 -> [卡片序号]，用来看有没有两张卡片抢同一个
+    var dateMatch = {};   // 卡片序号 -> 中文名序号（只在只有一个候选时才记）
+    for (var ii = 0; ii < list.length; ii++) {
+      var sd = list[ii].startDate;
+      if (!sd || !sd.month || !sd.day) {
+        continue;
+      }
+      var cands = byDate[sd.month + '-' + sd.day] || [];
+      var only = -1;
+      var howMany = 0;
+      for (var cc = 0; cc < cands.length; cc++) {
+        var ej = cands[cc];
+        var tdiff = Math.abs(table[ej].weekday * 1440 + table[ej].minutes + OFFSET_MINUTES
+          - weekMinutesOfTimestamp(list[ii].airingAt));
+        if (tdiff <= SAME_DATE_WINDOW_MINUTES) {
+          only = ej;
+          howMany += 1;
+        }
+      }
+      if (howMany === 1) {
+        dateMatch[ii] = only;
+        if (!claims[only]) {
+          claims[only] = [];
+        }
+        claims[only].push(ii);
+      }
+    }
+
+    for (var iw in dateMatch) {
+      var ew = dateMatch[iw];
+      if (claims[ew] && claims[ew].length === 1) {
+        list[iw].titleZh = table[ew].title;
+        itemTaken[iw] = true;
+        entryTaken[ew] = true;
+      }
+    }
+
+    // 第一步：找出「两张卡片抢同一个中文名」或「一张卡片有两个差不多的候选」
+    for (var k = 0; k < pairs.length; k++) {
+      var pair = pairs[k];
+      if (dropped[pair.item] || itemTaken[pair.item] || entryTaken[pair.entry]) {
+        continue;
+      }
+
+      for (var m = 0; m < pairs.length; m++) {
+        var other = pairs[m];
+        if (other === pair || dropped[other.item] || Math.abs(other.score - pair.score) > AMBIGUITY_MARGIN) {
+          continue;
+        }
+        if (itemTaken[other.item] || entryTaken[other.entry]) {
+          continue;
+        }
+        if (other.item === pair.item || other.entry === pair.entry) {
+          dropped[pair.item] = true;
+          dropped[other.item] = true;
+          break;
+        }
+      }
+    }
+
+    // 第二步：被砍掉的卡片沾过的中文名也标脏，免得换个卡片再配错一次
+    for (var a = 0; a < pairs.length; a++) {
+      if (dropped[pairs[a].item]) {
+        poisoned[pairs[a].entry] = true;
+      }
+    }
+
+    // 第三步：从最像的一对开始认领，一个中文名只给一张卡片
+    for (var p = 0; p < pairs.length; p++) {
+      var cand = pairs[p];
+      if (dropped[cand.item] || poisoned[cand.entry] || itemTaken[cand.item] || entryTaken[cand.entry]) {
+        continue;
+      }
+      itemTaken[cand.item] = true;
+      entryTaken[cand.entry] = true;
+      list[cand.item].titleZh = table[cand.entry].title;
+    }
   }
 
   window.Zh = {
