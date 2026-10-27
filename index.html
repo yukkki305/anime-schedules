@@ -27,8 +27,8 @@
   <!-- 卡片由 js/main.js 拿真实数据渲染进来 -->
   <main class="schedule" id="schedule"></main>
 
-  <!-- 这行文字会随时变：加载中 / 加载失败 / 共几部 -->
-  <p class="hint" id="status"></p>
+  <!-- 这行文字会随时变：加载中 / 加载失败 / 共几部。aria-live 让读屏软件也跟着念 -->
+  <p class="hint" id="status" aria-live="polite"></p>
 
   <!-- 按加载顺序排：先工具，后界面，最后入口。全部普通脚本，不用 ES 模块。 -->
   <script src="js/time.js" defer></script>

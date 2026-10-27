@@ -1,5 +1,5 @@
 // ui.js —— 负责「把数据变成页面上的卡片」和「更新那行提示文字」。
-// 阶段 2：多了真实封面图、多了状态提示。排序、点击切换、完整三态留给后面的阶段。
+// 阶段 4a：多了三种状态的画面——加载中（骨架）、出错（带重试按钮）、空（这天没排播）。
 
 (function () {
   'use strict';
@@ -119,9 +119,118 @@
     }
   }
 
+  // —————————— 下面是「三种状态」的画面 ——————————
+
+  // 加载中画几个骨架卡片。数量和形状都贴着真卡片，
+  // 这样数据回来替换成真卡片时，页面高度几乎不变，不会「跳一下」。
+  var SKELETON_COUNT = 5;
+
+  function renderSkeleton(count) {
+    var container = document.getElementById('schedule');
+    if (!container) {
+      return;
+    }
+    container.textContent = '';
+
+    var total = count || SKELETON_COUNT;
+    for (var i = 0; i < total; i++) {
+      var card = document.createElement('article');
+      card.className = 'card is-skeleton';
+      card.setAttribute('aria-hidden', 'true'); // 纯装饰，读屏软件不用念
+
+      var cover = document.createElement('div');
+      cover.className = 'card-cover skeleton-bar';
+      card.appendChild(cover);
+
+      var body = document.createElement('div');
+      body.className = 'card-body skeleton-body';
+
+      var titleLine = document.createElement('div');
+      titleLine.className = 'skeleton-bar skeleton-line is-title';
+      body.appendChild(titleLine);
+
+      var metaLine = document.createElement('div');
+      metaLine.className = 'skeleton-bar skeleton-line is-meta';
+      body.appendChild(metaLine);
+
+      var scoreLine = document.createElement('div');
+      scoreLine.className = 'skeleton-bar skeleton-line is-score';
+      body.appendChild(scoreLine);
+
+      card.appendChild(body);
+      container.appendChild(card);
+    }
+  }
+
+  // 出错：一个明确的错误块 + 「重试」按钮
+  function renderError(message, onRetry) {
+    var container = document.getElementById('schedule');
+    if (!container) {
+      return;
+    }
+    container.textContent = '';
+
+    var block = document.createElement('div');
+    block.className = 'state-block is-error';
+    block.setAttribute('role', 'alert'); // 让读屏软件主动念出来
+
+    var title = document.createElement('p');
+    title.className = 'state-title';
+    title.textContent = '加载失败';
+    block.appendChild(title);
+
+    var text = document.createElement('p');
+    text.className = 'state-text';
+    text.textContent = message;
+    block.appendChild(text);
+
+    if (typeof onRetry === 'function') {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'retry-btn';
+      button.textContent = '重试';
+      button.addEventListener('click', function () {
+        // 点一下先按下去，免得手抖连点发出好几次请求
+        button.disabled = true;
+        button.textContent = '正在重试…';
+        onRetry();
+      });
+      block.appendChild(button);
+    }
+
+    container.appendChild(block);
+  }
+
+  // 空：这一天确实没有查到排播
+  function renderEmpty(message) {
+    var container = document.getElementById('schedule');
+    if (!container) {
+      return;
+    }
+    container.textContent = '';
+
+    var block = document.createElement('div');
+    block.className = 'state-block';
+
+    var title = document.createElement('p');
+    title.className = 'state-title';
+    title.textContent = '这天没有排播';
+    block.appendChild(title);
+
+    var text = document.createElement('p');
+    text.className = 'state-text';
+    text.textContent = message;
+    block.appendChild(text);
+
+    container.appendChild(block);
+  }
+
   // 挂到 window 上，让 main.js 能调用（不用 ES 模块，所以只能靠 window 传）
   window.UI = {
     renderCards: renderCards,
+    renderSkeleton: renderSkeleton,
+    renderError: renderError,
+    renderEmpty: renderEmpty,
     setStatus: setStatus
   };
 })();

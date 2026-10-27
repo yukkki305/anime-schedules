@@ -154,3 +154,110 @@ body {
     height: 112px;
   }
 }
+
+/* —————————— 阶段 4a：三种状态 —————————— */
+
+/* 加载中的骨架卡片：外形和真卡片一样，只是内容换成灰条 */
+.card.is-skeleton {
+  pointer-events: none; /* 只是占位，不让人点 */
+}
+
+.skeleton-bar {
+  background-color: #e6e9ee;
+  border-radius: 6px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* 灰条一明一暗地呼吸，告诉用户「正在加载，没卡住」 */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 骨架卡片里的封面块跟着一起呼吸 */
+.card.is-skeleton .card-cover {
+  background-color: #e6e9ee;
+}
+
+.skeleton-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.skeleton-line {
+  height: 12px;
+}
+
+.skeleton-line.is-title {
+  height: 16px;
+  width: 72%;
+}
+
+.skeleton-line.is-meta {
+  width: 46%;
+}
+
+.skeleton-line.is-score {
+  width: 28%;
+}
+
+/* 出错 / 空：一块居中的提示 */
+.state-block {
+  padding: 32px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.state-block.is-error {
+  border-color: #f0c3b6;
+}
+
+.state-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.state-block.is-error .state-title {
+  color: var(--accent);
+}
+
+.state-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.retry-btn {
+  margin-top: 16px;
+  padding: 8px 22px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.retry-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 系统里开了「减少动态效果」就不闪，别让人头晕 */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar {
+    animation: none;
+  }
+}

@@ -1,5 +1,5 @@
 // main.js —— 程序入口，页面一打开就跑这里。
-// 阶段 3：7 个星期按钮能点了，点哪天看哪天；同一天 30 分钟内再看直接用缓存，不再请求。
+// 阶段 4a：加载中画骨架卡片，出错画错误块并给「重试」按钮，这天没排播画空状态。
 
 (function () {
   'use strict';
@@ -65,11 +65,17 @@
 
     if (cached) {
       // 缓存命中：不请求，直接画
-      renderList(cached);
-      window.UI.setStatus(
-        '共 ' + cached.length + ' 部 · ' + describe(dayKey) + ' · ' + cacheLabel(),
-        false
-      );
+      if (cached.length) {
+        renderList(cached);
+        window.UI.setStatus(
+          '共 ' + cached.length + ' 部 · ' + describe(dayKey) + ' · ' + cacheLabel(),
+          false
+        );
+      } else {
+        // 「这天确实没排播」也会被缓存下来，再点一次还是显示空状态，而不是空白
+        window.UI.renderEmpty(describe(dayKey) + ' 这一天 AniList 上没有查到播出安排。');
+        window.UI.setStatus('');
+      }
       return;
     }
 
@@ -79,8 +85,8 @@
     loadingDayKey = dayKey;
     var mySeq = ++requestSeq;
 
-    window.UI.renderCards([]);   // 先清空，免得上一天的数据留在新日期下面
-    window.UI.setStatus('加载中…（' + describe(dayKey) + '，AniList 一般要 5–8 秒）');
+    window.UI.renderSkeleton();   // 先画骨架，免得白屏让人以为坏了
+    window.UI.setStatus('正在查询 ' + describe(dayKey) + '…（AniList 一般要 5–8 秒）');
 
     window.Api.fetchDay(dayKey, function (attempt, waitMs, err) {
       if (mySeq !== requestSeq) {
@@ -99,8 +105,8 @@
       window.CacheStore.set(dayKey, list);
 
       if (!list.length) {
-        window.UI.renderCards([]);
-        window.UI.setStatus(describe(dayKey) + ' 没有查到播出安排。');
+        window.UI.renderEmpty(describe(dayKey) + ' 这一天 AniList 上没有查到播出安排。');
+        window.UI.setStatus('');
         return;
       }
 
@@ -111,8 +117,11 @@
         return;
       }
       loadingDayKey = '';
-      window.UI.renderCards([]);
-      window.UI.setStatus('加载失败：' + err.message + '。检查一下网络，然后刷新页面重试。', true);
+      // 错误块里带一个「重试」按钮，点它就重新请求这一天（不用让用户刷新页面）
+      window.UI.renderError('查 ' + describe(dayKey) + ' 的时候出错了：' + err.message + '。点下面的按钮再试一次。', function () {
+        loadDay(dayKey);
+      });
+      window.UI.setStatus('加载失败：' + err.message, true);
     });
   }
 
