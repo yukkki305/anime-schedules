@@ -74,11 +74,34 @@
     return WEEK_LABELS.indexOf(p.weekday);
   }
 
+  // '2026-10-27' 加/减 n 天 -> '2026-10-28'（纯日历加减，跟时区无关）
+  function addDays(key, n) {
+    var p = key.split('-');
+    var d = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2])) + n * 86400000);
+    var month = String(d.getUTCMonth() + 1);
+    var day = String(d.getUTCDate());
+    if (month.length < 2) {
+      month = '0' + month;
+    }
+    if (day.length < 2) {
+      day = '0' + day;
+    }
+    return d.getUTCFullYear() + '-' + month + '-' + day;
+  }
+
+  // '2026-10-27' 所在那一周的周一（项目里一周从周一开始算）
+  function mondayOf(key) {
+    var number = weekdayNumber(key);          // 0 = 周日
+    return addDays(key, -((number + 6) % 7)); // 周日要往回退 6 天
+  }
+
   window.Time = {
     dayKey: dayKey,
     cardTime: cardTime,
     todayKey: todayKey,
     dayRange: dayRange,
-    weekdayNumber: weekdayNumber
+    weekdayNumber: weekdayNumber,
+    addDays: addDays,
+    mondayOf: mondayOf
   };
 })();
