@@ -78,7 +78,7 @@
           return;   // 这期间用户又点了别的日子，这份结果就作废
         }
         if (list.length) {
-          renderList(list);
+          renderList(list, dayKey);
           window.UI.setStatus(
             '共 ' + list.length + ' 部 · ' + describe(dayKey) + ' · ' + cacheLabel(),
             false
@@ -132,7 +132,7 @@
         return;
       }
 
-      renderList(list);
+      renderList(list, dayKey);
       window.UI.setStatus('共 ' + list.length + ' 部 · ' + describe(dayKey) + ' · 北京时间');
     }).catch(function (err) {
       if (mySeq !== requestSeq) {
@@ -160,14 +160,36 @@
     return copy;
   }
 
+  // F2：找出「下一部即将播出」是哪一个。
+  // 只在看「今天」的时候算——看别的日子时现在几点没有意义。
+  // 只认还没开始播的（airingAt 比此刻晚），里面取最早的那一部。
+  function nextAiringId(list, dayKey) {
+    if (dayKey !== todayKey) {
+      return null;
+    }
+    var now = Math.floor(Date.now() / 1000);
+    var best = null;
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i].airingAt;
+      if (typeof t !== 'number' || t <= now) {
+        continue;
+      }
+      if (!best || t < best.airingAt) {
+        best = list[i];
+      }
+    }
+    return best ? best.id : null;
+  }
+
   // 真正画到页面上；封面关掉时把图片地址清空，让 ui.js 用彩色块顶上
-  function renderList(list) {
+  function renderList(list, dayKey) {
     if (!SHOW_COVER) {
       for (var i = 0; i < list.length; i++) {
         list[i].coverUrl = '';
       }
     }
-    window.UI.renderCards(sortByTime(list));
+    var sorted = sortByTime(list);
+    window.UI.renderCards(sorted, nextAiringId(sorted, dayKey));
   }
 
   // '2026-10-27' -> '10-27 周二'
@@ -181,3 +203,4 @@
     return window.CacheStore.persistent ? '来自缓存（30 分钟内有效）' : '来自本次打开的缓存（刷新后失效）';
   }
 })();
+

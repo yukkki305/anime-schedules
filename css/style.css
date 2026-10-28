@@ -174,6 +174,7 @@ body {
 }
 
 .card {
+  position: relative; /* F2 的小徽章要贴在卡片右上角，靠它定位 */
   display: flex;
   gap: 12px;
   padding: 12px;
@@ -185,12 +186,42 @@ body {
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+/* F2：「下一部即将播出」那张卡。
+   蓝色描边 + 外面套一圈很淡的蓝，和别的卡明显分得开，但不刺眼。 */
+.card.is-next {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow-card);
+}
+
+/* 小徽章浮在卡片上边缘，看起来像贴上去的标签 */
+.card-next-badge {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+/* 徽章底边正好落在卡片内容的顶线上（上移 9px、高 21px、内边距 12px），
+   所以无论标题多长都不会被它压住，不需要给文字让位。 */
+
 /* A1：鼠标移上去再亮一点、轻轻抬起 1 像素。
    只在真有鼠标的设备上做（手机上不要有「粘住」的高亮）。 */
 @media (hover: hover) {
   .card:hover {
     box-shadow: var(--shadow-card-hover);
     transform: translateY(-1px);
+  }
+
+  /* 「下一部」那张被 hover 时，不能把蓝圈弄丢 */
+  .card.is-next:hover {
+    box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow-card-hover);
   }
 }
 

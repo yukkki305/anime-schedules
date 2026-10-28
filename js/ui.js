@@ -154,7 +154,8 @@
   }
 
   // 把一组数据画进 #schedule。每次先清空，避免重复叠加。
-  function renderCards(list) {
+  // nextId：F2 要「下一部即将播出」那张卡的 id（没有就传 null）。
+  function renderCards(list, nextId) {
     var container = document.getElementById('schedule');
     if (!container) {
       return;
@@ -162,8 +163,25 @@
     clearList(container);
 
     for (var i = 0; i < list.length; i++) {
-      container.appendChild(createCard(list[i], i));
+      var card = createCard(list[i], i);
+      if (nextId !== null && nextId !== undefined && list[i].id === nextId) {
+        markAsNext(card, list[i]);
+      }
+      container.appendChild(card);
     }
+  }
+
+  // F2：把「下一部即将播出」这张卡标出来 —— 右边一个小徽章 + 蓝色描边。
+  function markAsNext(card, item) {
+    card.classList.add('is-next');
+
+    var badge = document.createElement('span');
+    badge.className = 'card-next-badge';
+    badge.textContent = '下一部';
+    // 徽章只是视觉提示，读屏软件念完整的一句更有用
+    badge.setAttribute('title', '下一部即将播出：' + (item.titleZh || item.title) + ' ' + item.timeText);
+    badge.setAttribute('aria-label', '下一部即将播出');
+    card.appendChild(badge);
   }
 
   // 更新底部那行提示。isError 为 true 时显示成红色。
