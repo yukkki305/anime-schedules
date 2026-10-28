@@ -17,6 +17,8 @@
   --error-border: #f0c3b6;  /* 错误提示块的边框 */
   --cover-placeholder: #d9dde3; /* 封面还没加载出来时的灰块 */
   --skeleton: #e6e9ee;      /* 骨架屏的灰条 */
+  --bg-glow: rgba(37, 99, 235, 0.07);   /* B4：页面顶部那团很淡的蓝光 */
+  --bg-dot: rgba(16, 24, 40, 0.055);    /* B4：背景上极淡的小点，代替死板的纯色底 */
   --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06);
   --shadow-card-hover: 0 4px 12px rgba(16, 24, 40, 0.10);
   --radius: 12px;
@@ -42,6 +44,8 @@
   --error-border: #4d2a26;
   --cover-placeholder: #2a2f38;
   --skeleton: #2a2f38;
+  --bg-glow: rgba(110, 168, 254, 0.12);
+  --bg-dot: rgba(255, 255, 255, 0.045);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45);
   --shadow-card-hover: 0 4px 14px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
@@ -54,10 +58,22 @@
 body {
   margin: 0;
   padding: 16px;
-  background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
   line-height: 1.5;
+
+  /* B4：背景不再是死板的纯色。
+     第一层：顶部一团很淡的蓝光（中心在屏幕上方外面，所以只露出下半圈）；
+     第二层：22px 一格的小点阵，几乎看不见，但屏幕看起来有质感。
+     两行 fallback 是给很老的浏览器：先铺纯色，再叠纹理。 */
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 50% -30%, var(--bg-glow) 0%, transparent 60%),
+    radial-gradient(var(--bg-dot) 1px, transparent 1px);
+  background-size: 100% 100%, 22px 22px;
+  /* 蓝光固定在视口顶部（滚动时不动，像房间里的光）；
+     小点阵跟着页面滚（它是平铺重复的，fixed 反而更费性能）。 */
+  background-attachment: fixed, scroll;
 }
 
 /* 顶部标题 */
@@ -105,13 +121,28 @@ body {
   color: var(--text-muted);
 }
 
+/* B3：吸顶条。position: sticky 的意思是「正常排版，但滚到 top: 0 就粘住」。
+   它必须有个不透明的底色，否则卡片会从按钮中间穿过去，看着像乱码。 */
+.weekday-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 0 0;
+  /* 底色要不透明，否则卡片会从按钮中间穿过去；
+     再叠一层和 body 一样的小点阵，滚动时这条不会变成一块「没有纹理」的板子。 */
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--bg-dot) 1px, transparent 1px);
+  background-size: 22px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* 7 个星期按钮：一行排开，窄屏可以左右滑 */
 .weekday-nav {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  max-width: 640px;
-  margin: 0 auto 16px;
   padding-bottom: 8px;
 }
 
@@ -139,7 +170,7 @@ body {
   flex-direction: column;
   gap: 12px;
   max-width: 640px;
-  margin: 0 auto;
+  margin: 16px auto 0; /* 上面 16px：和吸顶条拉开距离 */
 }
 
 .card {

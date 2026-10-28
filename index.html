@@ -36,16 +36,19 @@
     <button type="button" class="theme-btn" id="themeToggle" aria-label="切换深色/浅色">🌙</button>
   </header>
 
-  <!-- 7 个星期按钮。阶段 1 只是摆着，点了没反应，切换留给阶段 3。 -->
-  <nav class="weekday-nav" id="weekdayNav" aria-label="选择星期">
-    <button type="button" class="weekday-btn" data-weekday="1">周一</button>
-    <button type="button" class="weekday-btn is-active" data-weekday="2">周二</button>
-    <button type="button" class="weekday-btn" data-weekday="3">周三</button>
-    <button type="button" class="weekday-btn" data-weekday="4">周四</button>
-    <button type="button" class="weekday-btn" data-weekday="5">周五</button>
-    <button type="button" class="weekday-btn" data-weekday="6">周六</button>
-    <button type="button" class="weekday-btn" data-weekday="0">周日</button>
-  </nav>
+  <!-- B3：外面这层是「吸顶条」。往下滚的时候，7 个星期按钮会一直粘在窗口顶部，
+       省得滚到下面想切星期还得滑回最上面。 -->
+  <div class="weekday-bar">
+    <nav class="weekday-nav" id="weekdayNav" aria-label="选择星期">
+      <button type="button" class="weekday-btn" data-weekday="1">周一</button>
+      <button type="button" class="weekday-btn is-active" data-weekday="2">周二</button>
+      <button type="button" class="weekday-btn" data-weekday="3">周三</button>
+      <button type="button" class="weekday-btn" data-weekday="4">周四</button>
+      <button type="button" class="weekday-btn" data-weekday="5">周五</button>
+      <button type="button" class="weekday-btn" data-weekday="6">周六</button>
+      <button type="button" class="weekday-btn" data-weekday="0">周日</button>
+    </nav>
+  </div>
 
   <!-- 卡片由 js/main.js 拿真实数据渲染进来 -->
   <main class="schedule" id="schedule"></main>
