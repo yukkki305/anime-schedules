@@ -18,6 +18,10 @@
   var loadingDayKey = '';    // 正在请求哪一天，防止同一天被连点两次
 
   wireButtons();
+  // 先点亮「今天」对应的按钮，再去加载今天。
+  // （不加这一行的话，页面会一直显示 index.html 里写死的「周二」高亮——
+  //   2026-10-28 实测发现：今天明明是周三，高亮却停在周二。）
+  setActiveWeekday(window.Time.weekdayNumber(todayKey));
   loadDay(todayKey);
 
   // 把一个星期编号换算成「本周的那一天」

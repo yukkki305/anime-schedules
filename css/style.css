@@ -6,7 +6,12 @@
   --text: #1f2430;
   --text-muted: #6b7280;
   --border: #e3e6ea;
-  --accent: #e4572e;
+  --accent: #2563eb;        /* 主色：冷静蓝（2026-10-28 由砖橙 #e4572e 换过来） */
+  --accent-soft: #e8efff;   /* 主色的浅底，用在时间胶囊、徽章底色上 */
+  --danger: #c0392b;        /* 错误专用红色：主色变蓝以后，报错不能再用主色，否则只是「重点」不是「出错」 */
+  --danger-soft: #f7e5e2;
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(16, 24, 40, 0.10);
   --radius: 12px;
 }
 
@@ -84,6 +89,18 @@ body {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  /* A1：一层很浅的阴影，让卡片从灰底上「浮起来」 */
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+/* A1：鼠标移上去再亮一点、轻轻抬起 1 像素。
+   只在真有鼠标的设备上做（手机上不要有「粘住」的高亮）。 */
+@media (hover: hover) {
+  .card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
 }
 
 /* 封面位置：有图片就铺满，没有就留一个色块占位 */
@@ -107,10 +124,12 @@ body {
   min-width: 0; /* 不加这行，长标题会把卡片撑破 */
 }
 
+/* D2：中文标题是主角（16px / 粗），罗马音是注解（12px / 细、灰） */
 .card-title {
   margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
   word-break: break-word;
 }
 
@@ -121,9 +140,10 @@ body {
 
 .card-title-romaji {
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
   font-size: 12px;
   font-weight: 400;
+  line-height: 1.35;
   color: var(--text-muted);
 }
 
@@ -136,7 +156,12 @@ body {
   color: var(--text-muted);
 }
 
+/* A3：时间做成浅底胶囊，一眼能扫到「几点播」 */
 .card-time {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
 }
@@ -157,7 +182,7 @@ body {
 }
 
 .hint.is-error {
-  color: var(--accent);
+  color: var(--danger);
 }
 
 /* 屏幕宽一点的时候封面放大一些 */
@@ -227,11 +252,13 @@ body {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   text-align: center;
 }
 
 .state-block.is-error {
   border-color: #f0c3b6;
+  background: #fffdfc;
 }
 
 .state-title {
@@ -241,7 +268,7 @@ body {
 }
 
 .state-block.is-error .state-title {
-  color: var(--accent);
+  color: var(--danger);
 }
 
 .state-text {
@@ -272,6 +299,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-bar {
     animation: none;
+  }
+
+  /* 悬停上浮也算动态效果，一起去掉 */
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
   }
 }
 
