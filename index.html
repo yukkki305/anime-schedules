@@ -5,12 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>每日新番更新时间表</title>
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- B1 深色模式：在页面「画出来之前」就把主题定下来。
+       如果等页面画完再改，深色模式下会先白闪一下，很刺眼。
+       所以这 6 行必须放在这里、不能用 defer。 -->
+  <script>
+    (function () {
+      var saved = null;
+      try {
+        saved = localStorage.getItem('anime:theme');
+      } catch (e) {
+        // 极少数浏览器在 file:// 下不给用 localStorage，那就当没存过
+      }
+      var theme = saved;
+      if (theme !== 'light' && theme !== 'dark') {
+        // 用户没手动选过，就跟着系统走
+        theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
 
   <header class="site-header">
     <h1>每日新番更新时间表</h1>
     <p class="subtitle">时间均为北京时间（UTC+8）</p>
+    <button type="button" class="theme-btn" id="themeToggle" aria-label="切换深色/浅色">🌙</button>
   </header>
 
   <!-- 7 个星期按钮。阶段 1 只是摆着，点了没反应，切换留给阶段 3。 -->
@@ -38,6 +61,7 @@
   <script src="js/cache.js" defer></script>
   <script src="js/zh.js" defer></script>
   <script src="js/ui.js" defer></script>
+  <script src="js/theme.js" defer></script>
   <script src="js/main.js" defer></script>
 
 </body>

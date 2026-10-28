@@ -1,5 +1,7 @@
 /* style.css —— 全站样式。阶段 1 只做静态骨架，深色模式、动画都不在这里。 */
 
+/* 浅色是「默认值」。深色在下面单独写一块，把同样的变量换成深色的值。
+   页面里所有颜色都写成 var(--名字)，所以换主题只要换这一组变量。 */
 :root {
   --bg: #f5f6f8;
   --card-bg: #ffffff;
@@ -8,11 +10,41 @@
   --border: #e3e6ea;
   --accent: #2563eb;        /* 主色：冷静蓝（2026-10-28 由砖橙 #e4572e 换过来） */
   --accent-soft: #e8efff;   /* 主色的浅底，用在时间胶囊、徽章底色上 */
+  --on-accent: #ffffff;     /* 压在 --accent 上面的字色（深色主题下要反过来，否则看不清） */
   --danger: #c0392b;        /* 错误专用红色：主色变蓝以后，报错不能再用主色，否则只是「重点」不是「出错」 */
   --danger-soft: #f7e5e2;
+  --error-surface: #fffdfc; /* 错误提示块的底色 */
+  --error-border: #f0c3b6;  /* 错误提示块的边框 */
+  --cover-placeholder: #d9dde3; /* 封面还没加载出来时的灰块 */
+  --skeleton: #e6e9ee;      /* 骨架屏的灰条 */
   --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.06);
   --shadow-card-hover: 0 4px 12px rgba(16, 24, 40, 0.10);
   --radius: 12px;
+  color-scheme: light;
+}
+
+/* —————————— B1：深色模式 —————————— */
+/* 这里只换颜色变量，别的规则一行都不用改。
+   `color-scheme: dark` 是告诉浏览器「这一页是深色的」：
+   滚动条、下拉框、输入框的默认样子会跟着变深，不然会出现一条亮白的滚动条。 */
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --card-bg: #181b21;
+  --text: #e7e9ee;
+  --text-muted: #9aa3b2;
+  --border: #262b34;
+  --accent: #6ea8fe;        /* 深底上要更亮一点的蓝，不然显脏 */
+  --accent-soft: #1b2740;
+  --on-accent: #0b1220;     /* 浅蓝底上压深色字，对比才够 */
+  --danger: #ff7b72;
+  --danger-soft: #3a1d1a;
+  --error-surface: #1d1517;
+  --error-border: #4d2a26;
+  --cover-placeholder: #2a2f38;
+  --skeleton: #2a2f38;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 4px 14px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
 }
 
 * {
@@ -30,8 +62,36 @@ body {
 
 /* 顶部标题 */
 .site-header {
+  position: relative; /* 给右上角的深浅色按钮当定位参考 */
   text-align: center;
   margin-bottom: 16px;
+}
+
+/* B1：右上角那颗「切换深浅色」的圆按钮 */
+.theme-btn {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.theme-btn:hover {
+  border-color: var(--accent);
+}
+
+/* 用键盘 Tab 选中时要能看出焦点在哪 */
+.theme-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .site-header h1 {
@@ -70,7 +130,7 @@ body {
 .weekday-btn.is-active {
   border-color: var(--accent);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 /* 卡片列表 */
@@ -108,7 +168,7 @@ body {
   flex: 0 0 64px;
   height: 90px;
   border-radius: 8px;
-  background-color: #d9dde3;
+  background-color: var(--cover-placeholder);
   overflow: hidden; /* 图片铺满时不要溢出圆角 */
 }
 
@@ -201,7 +261,7 @@ body {
 }
 
 .skeleton-bar {
-  background-color: #e6e9ee;
+  background-color: var(--skeleton);
   border-radius: 6px;
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
@@ -219,7 +279,7 @@ body {
 
 /* 骨架卡片里的封面块跟着一起呼吸 */
 .card.is-skeleton .card-cover {
-  background-color: #e6e9ee;
+  background-color: var(--skeleton);
 }
 
 .skeleton-body {
@@ -257,8 +317,8 @@ body {
 }
 
 .state-block.is-error {
-  border-color: #f0c3b6;
-  background: #fffdfc;
+  border-color: var(--error-border);
+  background: var(--error-surface);
 }
 
 .state-title {
@@ -284,7 +344,7 @@ body {
   border: 1px solid var(--accent);
   border-radius: 999px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
@@ -346,5 +406,12 @@ body {
 
   .state-block {
     padding: 24px 14px;
+  }
+
+  /* 窄屏上按钮小一点，别挤到标题 */
+  .theme-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 }
